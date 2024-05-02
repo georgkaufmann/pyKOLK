@@ -1,0 +1,12 @@
+#-------------------------------------------
+# .gitignore file for tutorial 
+#-------------------------------------------
+Untitled*.ipynb
+*noshow.ipynb
+div/
+lit/
+!lit/README.md
+versions/
+!lit/README.md
+work/*.png
+work/*.jpg

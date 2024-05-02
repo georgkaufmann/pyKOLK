@@ -1,0 +1,4 @@
+! timeline and glacial index (0-interglacial; 1-glacial)
+! time BP [yr]     TSoil [C]
+      -10000.0         10.00
+          00.0         10.00
