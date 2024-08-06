@@ -1,7 +1,7 @@
 """
 pyKOLK
 library for solution pocket modelling in 2D
-2024-04-04
+2024-05-02
 Georg Kaufmann
 """
 
@@ -185,7 +185,7 @@ def createClimate2D(timemin,timemax,tempSoilmin,tempSoilmax,pco2Soilmin,pco2Soil
 
 
 #================================#
-def plotKolk(kolkGeom,kolkSave,sidex,iSaved):
+def plotKolk(kolkGeom,kolkSave,sidex,iSaved,path='work/'):
     """
     pyKOLK
     plot shapes of solution pockets for specified times
@@ -209,6 +209,7 @@ def plotKolk(kolkGeom,kolkSave,sidex,iSaved):
     #plt.plot(x,y)
     plt.legend()
     plt.grid()
+    plt.savefig(path+'KOLK.png')
     return
 
 
@@ -273,10 +274,22 @@ def runKolk_flow(infile1='KOLK_parameter.in',infile2='KOLK_timeline.in',path='wo
             Psoil = np.interp(time,[timeStart,timeEnd],[PSoilmin,PSoilmax])
             Pcave = np.interp(time,[timeStart,timeEnd],[PCavemin,PCavemax])
             Dcave = np.interp(time,[timeStart,timeEnd],[dropCavemin,dropCavemax])
-        elif (climate == 'season'):
+        elif (climate == 'seasonT'):
             Tsoil = TSoilmin + (TSoilmax-TSoilmin)*0.5 * (1. - np.cos(2*np.pi*time))
             Tcave = np.interp(time,[timeStart,timeEnd],[TCavemin,TCavemax])
             Psoil = np.interp(time,[timeStart,timeEnd],[PSoilmin,PSoilmax])
+            Pcave = np.interp(time,[timeStart,timeEnd],[PCavemin,PCavemax])
+            Dcave = np.interp(time,[timeStart,timeEnd],[dropCavemin,dropCavemax])
+        elif (climate == 'seasonP'):
+            Tsoil = np.interp(time,[timeStart,timeEnd],[TSoilmin,TSoilmax])
+            Tcave = np.interp(time,[timeStart,timeEnd],[TCavemin,TCavemax])
+            Psoil = PSoilmin + (PSoilmax-PSoilmin)*0.5 * (1. - np.cos(2*np.pi*time))
+            Pcave = np.interp(time,[timeStart,timeEnd],[PCavemin,PCavemax])
+            Dcave = np.interp(time,[timeStart,timeEnd],[dropCavemin,dropCavemax])
+        elif (climate == 'seasonTP'):
+            Tsoil = TSoilmin + (TSoilmax-TSoilmin)*0.5 * (1. - np.cos(2*np.pi*time))
+            Tcave = np.interp(time,[timeStart,timeEnd],[TCavemin,TCavemax])
+            Psoil = PSoilmin + (PSoilmax-PSoilmin)*0.5 * (1. - np.cos(2*np.pi*time))
             Pcave = np.interp(time,[timeStart,timeEnd],[PCavemin,PCavemax])
             Dcave = np.interp(time,[timeStart,timeEnd],[dropCavemin,dropCavemax])
         elif (climate == 'paleo'):
@@ -343,7 +356,7 @@ def runKolk_flow(infile1='KOLK_parameter.in',infile2='KOLK_timeline.in',path='wo
     print('End time loop ...')
     # plot solution pocket
     if (plot):
-        libKOLK.plotKolk(kolkGeom,kolkSave,sidex,iSaved)
+        libKOLK.plotKolk(kolkGeom,kolkSave,sidex,iSaved,path=path)
     return kolkGeom,kolkSave,iSaved,sidex
 
 

@@ -1,0 +1,6 @@
+#!/bin/zsh
+for i in Kolk1_UnicornCave_GeorgKaufmann.jpg Kolk2_UnicornCave_GeorgKaufmann.jpg;do
+
+    convert $i -gravity NorthWest -pointsize 80 -fill yellow -annotate +50+50 "Solution Pockets / Unicorn Cave"  ttt.jpg
+    convert ttt.jpg -gravity SouthEast -pointsize 80 -fill yellow -annotate +50+50 "(c) Georg Kaufmann" $i
+done
