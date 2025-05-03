@@ -18,7 +18,9 @@ def readParameter2D(infile='KOLK_parameter.in',path='work/',control=False):
     pyKOLK
     ! read KOLK parameter file
     ! input:
-    !  (from file infile)
+    !  infile               - filename (default: STALAGMITE_parameter.in)
+    !  path                 - filepath (default: work/)
+    !  control              - control flag for output
     ! output:
     !  xmin,xmax,nx         - min/max for x coordinate [m], discretisation
     !  whichtime            - flag for time units used
@@ -84,9 +86,12 @@ def readTimeline2D(infile='KOLK_timeline.in',path='work/',control=False):
     pyKOLK
     ! read KOLK timeline file
     ! input:
-    !  (from file infile) 
+    !  infile               - filename (default: STALAGMITE_parameter.in)
+    !  path                 - filepath (default: work/)
+    !  control              - control flag for output
     ! output:
-    !  timeStart,timeEnd   - start/end point for time scale [s]    
+    !  timeStart,timeEnd   - start/end point for time scale [s]
+    !  rawTimeline          - array of timeline data
     ! use:
     !  timeStart,timeEnd,rawTimeline = libKOLK.readTimeline2D()
     ! note:
@@ -105,16 +110,17 @@ def readTimeline2D(infile='KOLK_timeline.in',path='work/',control=False):
 def createGrid2D(sidex,nx,init_height=0,plot=False):
     """
     pyKOLK
-    define initial geometry, shape as linear ramp
-    input:
-    sidex [m]  : length of model domain
-    nx         : steps
-    init_height: initial height at center (default: 0.)
-    plot       : plot flag (default: False)      
-    returns:
-    x,y [m]    : x- and y-coordinates
-    dx [m]     : discretisation
-    shape[]    : array holds x- and y-coordinates for storage
+    ! define initial geometry, shape as linear ramp
+    ! input:
+    ! sidex [m]  : length of model domain
+    ! nx         : steps
+    ! init_height: initial height at center (default: 0.)
+    ! plot       : plot flag (default: False)
+    ! output:
+    !  x,y [m]    : x- and y-coordinates
+    !  dx [m]     : discretisation
+    ! use:
+    !  x,y,dx = libKOLK.createGrid2D(sidex,nx,init_height)
     """
     xmin   = 0.
     xmax   = sidex
@@ -137,12 +143,14 @@ def createGrid2D(sidex,nx,init_height=0,plot=False):
 def refineGrid2D(x,y):
     """
     pyKOLK
-    function used to insert a grid point
-    next to the y-xis, when the grid is stretched too much
-    input:
-    x,y [m]     : x- and y-coordinates
-    returns:
-    x,y [m]     : new x- and y-coordinates
+    ! function used to insert a grid point
+    ! next to the y-xis, when the grid is stretched too much
+    ! input:
+    !  x,y [m]     : x- and y-coordinates
+    ! output:
+    !  x,y [m]     : new x- and y-coordinates
+    ! use:
+    !  x,y = libKOLK.refineGrid2D(x,y)
     """
     xnew = 0.5*(x[0]+x[1])
     ynew = 0.5*(y[0]+y[1])
@@ -155,47 +163,87 @@ def refineGrid2D(x,y):
 
 
 #================================#
-def createClimate2D(timemin,timemax,tempSoilmin,tempSoilmax,pco2Soilmin,pco2Soilmax,
-            tempCavemin,tempCavemax,pco2Cavemin,pco2Cavemax,dropCavemin,dropCavemax):
+def setClimate2D(time,timeStart,timeEnd,
+               TSoilmin,TSoilmax,
+               PSoilmin,PSoilmax,
+               TCavemin,TCavemax,
+               PCavemin,PCavemax,
+               DCavemin,DCavemax,
+               rawTimeline=np.array([[-999,-999],[-999,-999]]),
+               climate='simple'):
     """
     pyKOLK
-    function uses the climate variables (temperature, CO2-pressure, ...) and the current time
-    and linearly interpolates the climate values
-    input:
-      time,timemin,timemax    - time array, min/max values
-      tempSoilmin,tempSoilmax - min/max soil temperature
-      pco2Soilmin,pco2Soilmax - min/max soil CO2
-      tempCavemin,tempCavemax - min/max cave temperature
-      pco2Cavemin,pco2Cavemax - min/max cave CO2
-      dropCavemin,dropCavemax - min/max cave drop rate
-    output:
-      tempSoil,tempCave,pco2Soil,pco2Cave,dropCave - interpolated values ...
+    ! function sets climate conditions for a given time
+    ! input:
+    !  time,timeStart,timeEnd [a]     : current time, time limits
+    !  TSoilmin,TSoilmax [C]          : Soil temperature (min/max)
+    !  PSoilmin,PSoilmax [ppm]        : Soil CO2 (min/max)
+    !  TCavemin,TCavemax [C]          : Cave temperature (min/max)
+    !  PCavemin,PCavemax [ppm]        : Cave CO2 (min/max)
+    !  DCavemin,DCavemax [s]          : Cave drip interval (min/max)
+    !  rawTimeline                    : times and soil temperature from file
+    !  climate                        : flag for climate type
+    ! output:
+    !  TSoil     : Soil temperature
+    !  PSoil     : Soil CO2
+    !  TCave     : Cave temperature
+    !  PCave     : Cave CO2
+    !  DCave     : Cave srip interval
+    ! use:
+    !  TSoil,PSoil,TCave,PCave,DCave = libKOLK.setClimate2D(time,
+    !       timeStart,timeEnd,
+    !       TSoilmin,TSoilmax,
+    !       PSoilmin,PSoilmax,
+    !       TCavemin,TCavemax,
+    !       PCavemin,PCavemax,
+    !       DCavemin,DCavemax,
+    !       rawTimeline,climate)
     """
-    # create interpolation functions
-    #tempsoil = 0.5 * (1. - np.cos(2*np.pi*time))
-    #tempsoil = tempmin + (tempmax-tempmin)*tempsoil
-    #tempSoil = scipy.interpolate.interp1d(time,tempSoilmin + (tempSoilmax-tempSoilmin)*0.5 * (1. - np.cos(2*np.pi*time)) )
-    
-    tempSoil = scipy.interpolate.interp1d([timemin,timemax],[tempSoilmin,tempSoilmax])
-    tempCave = scipy.interpolate.interp1d([timemin,timemax],[tempCavemin,tempCavemax])
-    pco2Soil = scipy.interpolate.interp1d([timemin,timemax],[pco2Soilmin,pco2Soilmax])
-    pco2Cave = scipy.interpolate.interp1d([timemin,timemax],[pco2Cavemin,pco2Cavemax])
-    dropCave = scipy.interpolate.interp1d([timemin,timemax],[dropCavemin,dropCavemax])
-    return tempSoil,tempCave,pco2Soil,pco2Cave,dropCave
+    if (climate == 'simple'):
+        TSoil = np.interp(time,[timeStart,timeEnd],[TSoilmin,TSoilmax])
+        TCave = np.interp(time,[timeStart,timeEnd],[TCavemin,TCavemax])
+        PSoil = np.interp(time,[timeStart,timeEnd],[PSoilmin,PSoilmax])
+        PCave = np.interp(time,[timeStart,timeEnd],[PCavemin,PCavemax])
+        DCave = np.interp(time,[timeStart,timeEnd],[DCavemin,DCavemax])
+    elif (climate == 'seasonT'):
+        TSoil = TSoilmin + (TSoilmax-TSoilmin)*0.5 * (1. - np.cos(2*np.pi*time))
+        TCave = np.interp(time,[timeStart,timeEnd],[TCavemin,TCavemax])
+        PSoil = np.interp(time,[timeStart,timeEnd],[PSoilmin,PSoilmax])
+        PCave = np.interp(time,[timeStart,timeEnd],[PCavemin,PCavemax])
+        DCave = np.interp(time,[timeStart,timeEnd],[DCavemin,DCavemax])
+    elif (climate == 'seasonP'):
+        TSoil = np.interp(time,[timeStart,timeEnd],[TSoilmin,TSoilmax])
+        TCave = np.interp(time,[timeStart,timeEnd],[TCavemin,TCavemax])
+        PSoil = PSoilmin + (PSoilmax-PSoilmin)*0.5 * (1. - np.cos(2*np.pi*time))
+        PCave = np.interp(time,[timeStart,timeEnd],[PCavemin,PCavemax])
+        DCave = np.interp(time,[timeStart,timeEnd],[DCavemin,DCavemax])
+    elif (climate == 'seasonTP'):
+        TSoil = TSoilmin + (TSoilmax-TSoilmin)*0.5 * (1. - np.cos(2*np.pi*time))
+        TCave = np.interp(time,[timeStart,timeEnd],[TCavemin,TCavemax])
+        PSoil = PSoilmin + (PSoilmax-PSoilmin)*0.5 * (1. - np.cos(2*np.pi*time))
+        PCave = np.interp(time,[timeStart,timeEnd],[PCavemin,PCavemax])
+        DCave = np.interp(time,[timeStart,timeEnd],[DCavemin,DCavemax])
+    elif (climate == 'paleo'):
+        Tsoil = np.interp(time,rawTimeline[:,0],rawTimeline[:,1])
+        TCave = TCavemin+ (TCavemax-TCavemin) * (TSoil-TSoilmin)/(TSoilmax-TSoilmin)
+        Psoil = PSoilmin+ (PSoilmax-PSoilmin) * (TSoil-TSoilmin)/(TSoilmax-TSoilmin)
+        PCave = PCavemin+ (PCavemax-PCavemin) * (TSoil-TSoilmin)/(TSoilmax-TSoilmin)
+        DCave = DCavemin+ (DCavemax-DCavemin) * (TSoil-TSoilmin)/(TSoilmax-TSoilmin)
+    return TSoil,PSoil,TCave,PCave,DCave
 
 
 #================================#
 def plotKolk(kolkGeom,kolkSave,sidex,iSaved,path='work/'):
     """
     pyKOLK
-    plot shapes of solution pockets for specified times
-    input:
-      kolkGeom - x- und y-coordinates of saved solution pockets shape
-      kolkSave - saved times
-      sidex    - length of model domain
-      iSaved   - number of saved time steps
-    output:
-      (to file)
+    ! plot shapes of solution pockets for specified times
+    ! input:
+    !   kolkGeom - x- und y-coordinates of saved solution pockets shape
+    !   kolkSave - saved times
+    !   sidex    - length of model domain
+    !   iSaved   - number of saved time steps
+    ! output:
+    !   (to file)
     """
     plt.figure(figsize=(6,6))
     plt.title('Solution pocket')
@@ -214,7 +262,7 @@ def plotKolk(kolkGeom,kolkSave,sidex,iSaved,path='work/'):
 
 
 #================================#
-def runKolk_flow(infile1='KOLK_parameter.in',infile2='KOLK_timeline.in',path='work/',mix=1.0,climate='simple',plot=False):
+def pyKolk_flow(infile1='KOLK_parameter.in',infile2='KOLK_timeline.in',path='work/',mix=1.0,climate='simple',plot=False):
     """
     pyKOLK
     function creates solution pocket morphologies in 2D,
@@ -234,14 +282,11 @@ def runKolk_flow(infile1='KOLK_parameter.in',infile2='KOLK_timeline.in',path='wo
     year2sec    = 365.25*24*60*60
     # read input data
     sidex,nx,init_height,timeStep,timeWrite,TSoilmin,TSoilmax,PSoilmin,PSoilmax, \
-                PAtmmin,PAtmmax,TCavemin,TCavemax,PCavemin,PCavemax,dropCavemin,dropCavemax = \
+                PAtmmin,PAtmmax,TCavemin,TCavemax,PCavemin,PCavemax,DCavemin,DCavemax = \
                 libKOLK.readParameter2D(infile=infile1,path=path,control=True)
     timeStart,timeEnd,rawTimeline = libKOLK.readTimeline2D(infile=infile2,path=path,control=True)
     # create grid
-    x,y,dx = libKOLK.createGrid2D(sidex,nx,init_height,plot=True)
-    # create interpolation objects for climate
-    tempSoil,tempCave,pco2Soil,pco2Cave,dropCave = libKOLK.createClimate2D(timeStart,timeEnd,TSoilmin,TSoilmax,PSoilmin,PSoilmax,
-                                                           TCavemin,TCavemax,PCavemin,PCavemax,dropCavemin,dropCavemax)
+    x,y,dx = libKOLK.createGrid2D(sidex,nx,init_height,plot=False)
     # define stack for geometry, fill with initial shape
     nstack          = 50
     kolkGeom        = np.zeros(nx*2*nstack).reshape(nx,2,nstack)
@@ -268,42 +313,20 @@ def runKolk_flow(infile1='KOLK_parameter.in',infile2='KOLK_timeline.in',path='wo
     print('Start time loop ...')
     while (time <= timeEnd):
         # interpolate climate parameter
-        if (climate == 'simple'):
-            Tsoil = np.interp(time,[timeStart,timeEnd],[TSoilmin,TSoilmax])
-            Tcave = np.interp(time,[timeStart,timeEnd],[TCavemin,TCavemax])
-            Psoil = np.interp(time,[timeStart,timeEnd],[PSoilmin,PSoilmax])
-            Pcave = np.interp(time,[timeStart,timeEnd],[PCavemin,PCavemax])
-            Dcave = np.interp(time,[timeStart,timeEnd],[dropCavemin,dropCavemax])
-        elif (climate == 'seasonT'):
-            Tsoil = TSoilmin + (TSoilmax-TSoilmin)*0.5 * (1. - np.cos(2*np.pi*time))
-            Tcave = np.interp(time,[timeStart,timeEnd],[TCavemin,TCavemax])
-            Psoil = np.interp(time,[timeStart,timeEnd],[PSoilmin,PSoilmax])
-            Pcave = np.interp(time,[timeStart,timeEnd],[PCavemin,PCavemax])
-            Dcave = np.interp(time,[timeStart,timeEnd],[dropCavemin,dropCavemax])
-        elif (climate == 'seasonP'):
-            Tsoil = np.interp(time,[timeStart,timeEnd],[TSoilmin,TSoilmax])
-            Tcave = np.interp(time,[timeStart,timeEnd],[TCavemin,TCavemax])
-            Psoil = PSoilmin + (PSoilmax-PSoilmin)*0.5 * (1. - np.cos(2*np.pi*time))
-            Pcave = np.interp(time,[timeStart,timeEnd],[PCavemin,PCavemax])
-            Dcave = np.interp(time,[timeStart,timeEnd],[dropCavemin,dropCavemax])
-        elif (climate == 'seasonTP'):
-            Tsoil = TSoilmin + (TSoilmax-TSoilmin)*0.5 * (1. - np.cos(2*np.pi*time))
-            Tcave = np.interp(time,[timeStart,timeEnd],[TCavemin,TCavemax])
-            Psoil = PSoilmin + (PSoilmax-PSoilmin)*0.5 * (1. - np.cos(2*np.pi*time))
-            Pcave = np.interp(time,[timeStart,timeEnd],[PCavemin,PCavemax])
-            Dcave = np.interp(time,[timeStart,timeEnd],[dropCavemin,dropCavemax])
-        elif (climate == 'paleo'):
-            Tsoil = np.interp(time,rawTimeline[:,0],rawTimeline[:,1])
-            Tcave = TCavemin+ (TCavemax-TCavemin) * (TSoil-TSoilmin)/(TSoilmax-TSoilmin)
-            Psoil = PSoilmin+ (PSoilmax-PSoilmin) * (TSoil-TSoilmin)/(TSoilmax-TSoilmin)
-            Pcave = PCavemin+ (PCavemax-PCavemin) * (TSoil-TSoilmin)/(TSoilmax-TSoilmin)
-            Dcave = DCavemin+ (DCavemax-DCavemin) * (TSoil-TSoilmin)/(TSoilmax-TSoilmin)
-        Q = Vdrop / Dcave
+        TSoil,PSoil,TCave,PCave,DCave = libKOLK.setClimate2D(time,timeStart,timeEnd,
+               TSoilmin,TSoilmax,
+               PSoilmin,PSoilmax,
+               TCavemin,TCavemax,
+               PCavemin,PCavemax,
+               DCavemin,DCavemax,
+               rawTimeline,
+               climate=climate)
+        Q = Vdrop / DCave
         # drop chemistry
-        CEQopen   = libCHEM.CEQ_limestone_open(Tsoil,Psoil/1e6)
-        CEQclosed = libCHEM.CEQ_limestone_closed(Tsoil,Psoil/1e6)
+        CEQopen   = libCHEM.CEQ_limestone_open(TSoil,PSoil/1e6)
+        CEQclosed = libCHEM.CEQ_limestone_closed(TSoil,PSoil/1e6)
         Cin       = mix*CEQopen + (1-mix)*CEQclosed
-        CEQcave   = libCHEM.CEQ_limestone_open(Tcave,Pcave/1e6)
+        CEQcave   = libCHEM.CEQ_limestone_open(TCave,PCave/1e6)
         # calcium concentration, flux rate, and growth rate
         c[0]      = Cin
         flux[0]   = libCHEM.FCaCO3(Cin,CEQcave)
@@ -312,7 +335,7 @@ def runKolk_flow(infile1='KOLK_parameter.in',infile2='KOLK_timeline.in',path='wo
         growth[0] = mCaCO3 / rhoCaCO3 * flux[0] * timeStep * year2sec
         # refine grid    
         if (x[1] > 1.5*dx):
-            x,y = libKOLK.refineGrid2D(x,y)
+            x,y = refineGrid2D(x,y)
         # loop along surface
         angle[0]  = 0.
         for i in range(1,len(x)):
@@ -345,7 +368,7 @@ def runKolk_flow(infile1='KOLK_parameter.in',infile2='KOLK_timeline.in',path='wo
             if (iSaved > kolkGeom.shape[2]-1):
                 print('iSaved too large')
                 sys.exit()
-            print('%30s %10i %10.2f %10.2f' % ('Time step, time [a], TSoil [C]:',iSaved,time,Tsoil))
+            print('%30s %10i %10.2f %10.2f' % ('Time step, time [a], TSoil [C]:',iSaved,time,TSoil))
             kolkGeom[:,0,iSaved] = x
             kolkGeom[:,1,iSaved] = y
             kolkSave[iSaved]     = time
@@ -356,7 +379,7 @@ def runKolk_flow(infile1='KOLK_parameter.in',infile2='KOLK_timeline.in',path='wo
     print('End time loop ...')
     # plot solution pocket
     if (plot):
-        libKOLK.plotKolk(kolkGeom,kolkSave,sidex,iSaved,path=path)
+        plotKolk(kolkGeom,kolkSave,sidex,iSaved)
     return kolkGeom,kolkSave,iSaved,sidex
 
 
