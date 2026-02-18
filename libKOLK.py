@@ -229,6 +229,8 @@ def setClimate2D(time,timeStart,timeEnd,
         Psoil = PSoilmin+ (PSoilmax-PSoilmin) * (TSoil-TSoilmin)/(TSoilmax-TSoilmin)
         PCave = PCavemin+ (PCavemax-PCavemin) * (TSoil-TSoilmin)/(TSoilmax-TSoilmin)
         DCave = DCavemin+ (DCavemax-DCavemin) * (TSoil-TSoilmin)/(TSoilmax-TSoilmin)
+    else:
+        sys.exit('Nee so nicht!')
     return TSoil,PSoil,TCave,PCave,DCave
 
 
